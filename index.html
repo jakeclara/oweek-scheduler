@@ -908,7 +908,6 @@ function exportSchedule() {
     return;
   }
 
-  // Build grid HTML for each day
   function buildDayGrid(di) {
     const assigns = G.assigns[di] || [];
     let minH = 8, maxH = 18;
@@ -930,13 +929,13 @@ function exportSchedule() {
     const ROW = 28;
     const seen = {};
     let html = '<table class="sched"><thead><tr><th></th>';
-    G.members.forEach(m => { html += `<th>${m.name}</th>`; });
+    G.members.forEach(m => { html += '<th>' + m.name + '</th>'; });
     html += '</tr></thead><tbody>';
     slots.forEach((slot, si) => {
       const lbl = slot.m === 0 ? ftm(pad(slot.h)+':00') : ':30';
-      html += `<tr class="${slot.isHour?'hr':''}"><td>${lbl}</td>`;
+      html += '<tr class="' + (slot.isHour?'hr':'') + '"><td>' + lbl + '</td>';
       G.members.forEach(m => {
-        html += `<td style="height:${ROW}px">`;
+        html += '<td style="height:' + ROW + 'px">';
         assigns.filter(a=>a.memberId===m.id).forEach(a => {
           if (toSlotIdx(a.start) !== si) return;
           const ev = G.events.find(e=>e.id===a.eventId);
@@ -947,10 +946,12 @@ function exportSchedule() {
           const isFirst = !seen[key];
           if (isFirst) seen[key] = true;
           const locText = isFirst ? (ev.location||'') : '';
-          html += `<div class="blk${isFirst?'':' repeat'}" style="background:${ev.color};top:1px;height:${bh}px">
-            ${isFirst ? ev.name : `<span style="opacity:0.75;font-size:9px">${ev.name}</span>`}
-            ${locText ? `<span class="bloc-loc">${locText}</span>` : ''}
-          </div>`;
+          const noteText = isFirst ? (ev.note||'') : '';
+          html += '<div class="blk' + (isFirst?'':' repeat') + '" style="background:' + ev.color + ';top:1px;height:' + bh + 'px">';
+          html += isFirst ? ev.name : '<span style="opacity:0.75;font-size:9px">' + ev.name + '</span>';
+          if (locText) html += '<span class="bloc-loc">' + locText + '</span>';
+          if (noteText) html += '<span class="bloc-loc">' + noteText + '</span>';
+          html += '</div>';
         });
         html += '</td>';
       });
@@ -960,65 +961,68 @@ function exportSchedule() {
     return html;
   }
 
-  // Build tab buttons
   const tabBtns = G.days.map((d,i) =>
-    `<div class="day-tab" id="tab-${i}" onclick="showDay(${i})">${d.short}</div>`
+    '<div class="day-tab" id="tab-' + i + '" onclick="showDay(' + i + ')">' + d.short + '</div>'
   ).join('');
 
-  // Build day panels
   const dayPanels = G.days.map((d,i) =>
-    `<div class="day-panel" id="day-${i}" style="display:${i===0?'block':'none'}">${buildDayGrid(i)}</div>`
+    '<div class="day-panel" id="day-' + i + '" style="display:' + (i===0?'block':'none') + '">' + buildDayGrid(i) + '</div>'
   ).join('');
 
-  const weekLabel = G.days[0].short + ' – ' + G.days[G.days.length-1].short;
+  const weekLabel = G.days[0].short + ' - ' + G.days[G.days.length-1].short;
 
-  const exportHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OWeek Schedule</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{font-family:'DM Sans',sans-serif;font-size:13px;color:#111;background:#fff}
-.topbar{display:flex;align-items:center;gap:10px;height:44px;background:#111;color:#fff;padding:0 16px;position:sticky;top:0;z-index:20}
-.topbar h1{font-size:13px;font-weight:600}
-.topbar .wk{font-size:11px;color:#777;margin-left:6px}
-.day-tabs{display:flex;gap:1px;margin-left:auto}
-.day-tab{padding:4px 11px;font-size:11px;font-weight:500;cursor:pointer;color:#888;border-radius:3px}
-.day-tab:hover{color:#fff;background:#333}
-.day-tab.active{color:#111;background:#fff}
-.grid-area{padding:0;overflow-x:auto}
-table.sched{border-collapse:collapse;width:100%}
-table.sched th{position:sticky;top:44px;z-index:10;padding:9px 10px 8px;text-align:left;font-size:12px;font-weight:500;color:#111;background:#fafafa;border-bottom:2px solid #e4e4e4;border-right:1px solid #eee;white-space:nowrap;min-width:130px}
-table.sched th:first-child{width:56px;min-width:56px;font-size:10px;color:#bbb;font-weight:500;border-right:1.5px solid #e4e4e4}
-table.sched td{padding:0;height:28px;border-right:1px solid #f5f5f5;border-bottom:1px solid #f9f9f9;position:relative;vertical-align:top}
-table.sched tr.hr td{border-bottom:1px solid #ebebeb}
-table.sched td:first-child{padding:0 8px;font-size:10px;color:#ccc;font-weight:500;vertical-align:middle;white-space:nowrap;background:#fafafa;border-right:1.5px solid #e4e4e4}
-table.sched tr.hr td:first-child{color:#999;font-size:11px;font-weight:600}
-.blk{position:absolute;left:2px;right:2px;border-radius:2px;padding:2px 5px;color:#fff;font-size:10px;font-weight:500;overflow:hidden;z-index:2}
-.blk.repeat{opacity:0.65}
-.bloc-loc{display:block;font-size:9px;font-weight:400;opacity:0.8;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media print{.topbar{position:static}.day-tabs{display:none}.day-panel{display:block!important;page-break-after:always}.blk{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}}
-</style>
-</head>
-<body>
-<div class="topbar">
-  <h1>OWeek Schedule</h1>
-  <span class="wk">${weekLabel}</span>
-  <div class="day-tabs">${tabBtns}</div>
-</div>
-<div class="grid-area">${dayPanels}</div>
-<scr' + 'ipt>
-function showDay(i) {
-  document.querySelectorAll('.day-panel').forEach((el,j) => el.style.display = j===i?'block':'none');
-  document.querySelectorAll('.day-tab').forEach((el,j) => el.classList.toggle('active', j===i));
-}
-document.querySelectorAll('.day-tab')[0].classList.add('active');
-<\/script>
-</body>
-</html>`;
+  const showDayFn = [
+    'function showDay(i){',
+    '  document.querySelectorAll(".day-panel").forEach(function(el,j){el.style.display=j===i?"block":"none";});',
+    '  document.querySelectorAll(".day-tab").forEach(function(el,j){el.classList.toggle("active",j===i);});',
+    '}',
+    'document.querySelectorAll(".day-tab")[0].classList.add("active");'
+  ].join('\n');
+
+  const parts = [
+    '<!DOCTYPE html>',
+    '<html lang="en">',
+    '<head>',
+    '<meta charset="UTF-8">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+    '<title>OWeek Schedule</title>',
+    '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">',
+    '<style>',
+    '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}',
+    'html,body{font-family:"DM Sans",sans-serif;font-size:13px;color:#111;background:#fff}',
+    '.topbar{display:flex;align-items:center;gap:10px;height:44px;background:#111;color:#fff;padding:0 16px;position:sticky;top:0;z-index:100}',
+    '.topbar h1{font-size:13px;font-weight:600}',
+    '.topbar .wk{font-size:11px;color:#777;margin-left:6px}',
+    '.day-tabs{display:flex;gap:1px;margin-left:auto}',
+    '.day-tab{padding:4px 11px;font-size:11px;font-weight:500;cursor:pointer;color:#888;border-radius:3px}',
+    '.day-tab:hover{color:#fff;background:#333}',
+    '.day-tab.active{color:#111;background:#fff}',
+    '.grid-area{overflow-x:auto}',
+    'table.sched{border-collapse:collapse;width:100%}',
+    'table.sched th{position:sticky;top:44px;z-index:20;padding:9px 10px 8px;text-align:left;font-size:12px;font-weight:500;color:#111;background:#fafafa;border-bottom:2px solid #e4e4e4;border-right:1px solid #eee;white-space:nowrap;min-width:130px}',
+    'table.sched th:first-child{width:56px;min-width:56px;font-size:10px;color:#bbb;font-weight:500;border-right:1.5px solid #e4e4e4}',
+    'table.sched td{padding:0;height:28px;border-right:1px solid #f5f5f5;border-bottom:1px solid #f9f9f9;position:relative;vertical-align:top}',
+    'table.sched tr.hr td{border-bottom:1px solid #ebebeb}',
+    'table.sched td:first-child{padding:0 8px;font-size:10px;color:#ccc;font-weight:500;vertical-align:middle;white-space:nowrap;background:#fafafa;border-right:1.5px solid #e4e4e4}',
+    'table.sched tr.hr td:first-child{color:#999;font-size:11px;font-weight:600}',
+    '.blk{position:absolute;left:2px;right:2px;border-radius:2px;padding:2px 5px;color:#fff;font-size:10px;font-weight:500;overflow:hidden;z-index:2}',
+    '.blk.repeat{opacity:0.65}',
+    '.bloc-loc{display:block;font-size:9px;font-weight:400;opacity:0.8;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '@media print{.topbar{position:static}.day-tabs{display:none}.day-panel{display:block!important;page-break-after:always}.blk{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}}',
+    '</style>',
+    '</head>',
+    '<body>',
+    '<div class="topbar"><h1>OWeek Schedule</h1><span class="wk">' + weekLabel + '</span><div class="day-tabs">' + tabBtns + '</div></div>',
+    '<div class="grid-area">' + dayPanels + '</div>',
+    '</body>',
+    '</html>'
+  ];
+
+  // Inject the script by inserting before </body>
+  const bodyCloseIdx = parts.indexOf('</body>');
+  parts.splice(bodyCloseIdx, 0, '<script>' + showDayFn + '<' + '/script>');
+
+  const exportHtml = parts.join('\n');
 
   const blob = new Blob([exportHtml], {type:'text/html'});
   const a = document.createElement('a');
