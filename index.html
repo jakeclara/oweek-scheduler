@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OWeek Scheduler</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:13px;color:#111;background:#fff}
+
+/* ── Layout ── */
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+.topbar{
+  display:flex;align-items:center;gap:0;
+  height:44px;background:#111;color:#fff;flex-shrink:0;
+  padding:0 16px;
+}
+.topbar-title{font-size:13px;font-weight:600;letter-spacing:0.2px;white-space:nowrap}
+.topbar-week{font-size:11px;color:#777;margin-left:10px;white-space:nowrap}
+.day-tabs{display:flex;gap:1px;margin-left:auto}
+.day-tab{
+  padding:4px 11px;font-size:11px;font-weight:500;cursor:pointer;
+  color:#888;border-radius:3px;position:relative;white-space:nowrap;
+  transition:color 0.1s,background 0.1s;
+}
+.day-tab:hover{color:#fff;background:#333}
+.day-tab.active{color:#111;background:#fff}
+.day-tab.gap::after{
+  content:'';position:absolute;top:3px;right:3px;
+  width:5px;height:5px;border-radius:50%;background:#f87171;
+}
+.topbar-actions{display:flex;gap:6px;margin-left:12px}
+.tbtn{
+  padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer;
+  border:1px solid #444;border-radius:3px;background:transparent;color:#aaa;
+  font-family:inherit;
+}
+.tbtn:hover{border-color:#888;color:#fff}
+
+/* ── Body ── */
+.body{display:flex;flex:1;overflow:hidden}
+
+/* ── Left panel ── */
+.left{
+  width:240px;flex-shrink:0;
+  border-right:1px solid #e8e8e8;
+  display:flex;flex-direction:column;overflow:hidden;
+  background:#fafafa;
+}
+.left-nav{display:flex;border-bottom:1px solid #e8e8e8}
+.lnav{
+  flex:1;padding:8px 4px;text-align:center;
+  font-size:11px;font-weight:500;cursor:pointer;color:#999;
+  border-bottom:2px solid transparent;background:none;
+  transition:color 0.1s;
+}
+.lnav:hover{color:#555}
+.lnav.active{color:#111;border-bottom-color:#111}
+
+.panel{flex:1;overflow-y:auto;padding:14px 12px}
+.panel.hidden{display:none}
+
+.plabel{font-size:10px;font-weight:600;color:#bbb;letter-spacing:0.5px;margin:16px 0 8px;text-transform:uppercase}
+.plabel:first-child{margin-top:0}
+
+/* ── Form ── */
+.field{margin-bottom:8px}
+.field label{display:block;font-size:11px;color:#888;margin-bottom:3px}
+input[type=text],input[type=date],input[type=time],select,textarea{
+  width:100%;padding:6px 8px;
+  border:1px solid #e0e0e0;border-radius:3px;
+  font-family:inherit;font-size:12px;color:#111;background:#fff;
+  outline:none;transition:border-color 0.15s;
+}
+input:focus,select:focus,textarea:focus{border-color:#2563EB}
+textarea{resize:vertical;min-height:48px;line-height:1.4}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:4px;
+  padding:6px 11px;border-radius:3px;font-size:12px;font-weight:500;
+  cursor:pointer;border:1px solid #e0e0e0;background:#fff;color:#333;
+  font-family:inherit;transition:all 0.1s;
+}
+.btn:hover{background:#f5f5f5}
+.btn-dark{background:#111;color:#fff;border-color:#111}
+.btn-dark:hover{background:#333}
+.btn-full{width:100%}
+.btn-xs{padding:2px 7px;font-size:10px}
+.btn-del{border-color:#fca5a5;color:#dc2626}
+.btn-del:hover{background:#fef2f2}
+
+/* ── Color swatches ── */
+.swatches{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.swatch{width:20px;height:20px;border-radius:3px;cursor:pointer;border:2px solid transparent;flex-shrink:0}
+.swatch.on{border-color:#111;transform:scale(1.1)}
+
+/* ── Event list (checklist) ── */
+.ev-row{
+  display:flex;align-items:flex-start;gap:7px;
+  padding:7px 8px;border-radius:3px;cursor:pointer;
+  border:1px solid transparent;margin-bottom:3px;
+  transition:background 0.1s,border-color 0.1s;
+}
+.ev-row:hover{background:#f0f0f0}
+.ev-row.sel{background:#eff6ff;border-color:#bfdbfe}
+.ev-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0;margin-top:3px}
+.ev-body{flex:1;min-width:0}
+.ev-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev-meta{font-size:10px;color:#aaa;margin-top:1px}
+.ev-status{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px}
+.estag{font-size:9px;font-weight:600;padding:1px 5px;border-radius:2px}
+.estag.ok{background:#dcfce7;color:#15803d}
+.estag.no{background:#fee2e2;color:#b91c1c}
+.ev-edit{opacity:0;font-size:10px;color:#aaa;padding:1px 4px;cursor:pointer;flex-shrink:0;margin-top:1px}
+.ev-row:hover .ev-edit{opacity:1}
+.ev-edit:hover{color:#111}
+
+/* ── Member list ── */
+.mem-row{
+  display:flex;align-items:center;gap:7px;
+  padding:6px 8px;border-radius:3px;margin-bottom:3px;
+  border:1px solid #e8e8e8;background:#fff;
+}
+.mem-av{
+  width:24px;height:24px;border-radius:50%;
+  background:#e5e7eb;display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:600;color:#555;flex-shrink:0;
+}
+.mem-name{flex:1;font-size:12px;font-weight:500}
+
+/* ── Hint bar ── */
+.hint-bar{
+  font-size:11px;padding:6px 16px;
+  background:#eff6ff;border-bottom:1px solid #dbeafe;color:#1d4ed8;
+  flex-shrink:0;display:none;
+}
+.hint-bar.show{display:block}
+
+/* ── Coverage bar ── */
+.cov-bar{
+  display:flex;align-items:center;gap:12px;
+  padding:5px 16px;background:#fff;border-bottom:1px solid #e8e8e8;
+  font-size:11px;color:#888;flex-shrink:0;
+}
+.covstat{display:flex;align-items:center;gap:4px}
+.covdot{width:6px;height:6px;border-radius:50%}
+
+/* ── Grid ── */
+.grid-area{flex:1;overflow:auto;background:#fff}
+.grid-wrap{min-width:400px}
+
+table.sched{border-collapse:collapse;width:100%}
+table.sched th{
+  position:sticky;top:0;z-index:10;
+  padding:9px 10px 8px;text-align:left;
+  font-size:12px;font-weight:500;color:#111;
+  background:#fafafa;border-bottom:2px solid #e4e4e4;
+  border-right:1px solid #eee;white-space:nowrap;min-width:130px;
+}
+table.sched th:first-child{
+  width:56px;min-width:56px;font-size:10px;color:#bbb;font-weight:500;
+  border-right:1.5px solid #e4e4e4;
+}
+table.sched td{
+  padding:0;height:26px;border-right:1px solid #f5f5f5;
+  border-bottom:1px solid #f9f9f9;position:relative;vertical-align:top;
+}
+table.sched tr.hr td{border-bottom:1px solid #ebebeb}
+table.sched td:first-child{
+  padding:0 8px;font-size:10px;color:#ccc;font-weight:500;
+  vertical-align:middle;white-space:nowrap;background:#fafafa;
+  border-right:1.5px solid #e4e4e4;
+}
+table.sched tr.hr td:first-child{color:#999;font-size:11px;font-weight:600}
+table.sched td.clickable{cursor:pointer}
+table.sched td.clickable:hover{background:#f0f7ff}
+
+/* ── Schedule blocks ── */
+.blk{
+  position:absolute;left:2px;right:2px;border-radius:2px;
+  padding:2px 5px;color:#fff;font-size:10px;font-weight:500;
+  overflow:hidden;z-index:2;cursor:pointer;
+}
+.blk:hover{filter:brightness(0.88)}
+.blk .bloc-loc{display:block;font-size:9px;font-weight:400;opacity:0.8;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blk.repeat{opacity:0.65}
+
+/* ── Empty states ── */
+.empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:200px;color:#ccc;font-size:12px;gap:6px;text-align:center;
+}
+.empty-icon{font-size:24px}
+
+/* ── Modals ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.2);z-index:200;display:flex;align-items:center;justify-content:center}
+.overlay.off{display:none}
+.modal{background:#fff;border-radius:5px;padding:18px;width:290px;box-shadow:0 4px 24px rgba(0,0,0,0.12)}
+.modal h3{font-size:13px;font-weight:600;margin-bottom:12px}
+.modal-foot{display:flex;gap:6px;justify-content:flex-end;margin-top:12px}
+
+/* ── Print ── */
+@media print{
+  .left,.topbar,.hint-bar,.cov-bar{display:none!important}
+  .body{display:block}
+  .grid-area{overflow:visible}
+  body,html{height:auto}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <span class="topbar-title">OWeek Scheduler</span>
+    <span class="topbar-week" id="week-label"></span>
+    <div class="day-tabs" id="day-tabs"></div>
+    <div class="topbar-actions">
+      <button class="tbtn" onclick="exportSchedule()">Export</button>
+      <button class="tbtn" onclick="window.print()">Print</button>
+    </div>
+  </div>
+
+  <!-- Hint bar -->
+  <div class="hint-bar" id="hint-bar"></div>
+
+  <!-- Coverage bar -->
+  <div class="cov-bar">
+    <span style="font-weight:500;color:#111;font-size:11px">Coverage</span>
+    <span class="covstat"><span class="covdot" style="background:#22c55e"></span><span id="cv-ok">—</span></span>
+    <span class="covstat"><span class="covdot" style="background:#ef4444"></span><span id="cv-no">—</span></span>
+    <span class="covstat"><span class="covdot" style="background:#f59e0b"></span><span id="cv-part">—</span></span>
+    <span style="margin-left:auto;font-size:10px;color:#ccc" id="day-label"></span>
+  </div>
+
+  <div class="body">
+
+    <!-- Left panel -->
+    <div class="left">
+      <div class="left-nav">
+        <div class="lnav active" onclick="lswitch('setup')">Setup</div>
+        <div class="lnav" onclick="lswitch('events')">Events</div>
+        <div class="lnav" onclick="lswitch('team')">Team</div>
+        <div class="lnav" onclick="lswitch('place')">Place</div>
+      </div>
+
+      <!-- Setup -->
+      <div class="panel" id="p-setup">
+        <div class="plabel">OWeek dates</div>
+        <div class="field"><label>Start date</label><input type="date" id="i-start" onchange="onDates()"></div>
+        <div class="field"><label>End date</label><input type="date" id="i-end" onchange="onDates()"></div>
+        <div style="margin-top:12px;font-size:11px;color:#bbb;line-height:1.5">
+          Set your dates first — they define the day tabs across the top.
+        </div>
+      </div>
+
+      <!-- Events -->
+      <div class="panel hidden" id="p-events">
+        <div class="plabel">New event</div>
+        <div class="field"><label>Name</label><input type="text" id="i-evname" placeholder="e.g. Check Baker Lunch" onkeydown="if(event.key==='Enter')addEvent()"></div>
+        <div class="row2">
+          <div class="field"><label>Start</label><input type="time" id="i-evstart" value="09:00"></div>
+          <div class="field"><label>End</label><input type="time" id="i-evend" value="10:00"></div>
+        </div>
+        <div class="field"><label>Location</label><input type="text" id="i-evloc" placeholder="e.g. Main Hall"></div>
+        <div class="field"><label>Note</label><textarea id="i-evnote" placeholder="Setup time, reminders…"></textarea></div>
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#111">
+            <input type="checkbox" id="i-evrecur"> Recurring
+          </label>
+        </div>
+        <div id="oneday-wrap">
+          <div class="field"><label>Which day</label>
+            <select id="i-evday"><option value="">— select a day —</option></select>
+          </div>
+        </div>
+        <div id="dow-wrap" style="display:none">
+          <div class="field"><label>Expected on</label>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:3px" id="dow-boxes">
+              <label style="font-size:11px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" data-dow="1" checked>Mon</label>
+              <label style="font-size:11px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" data-dow="2" checked>Tue</label>
+              <label style="font-size:11px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" data-dow="3" checked>Wed</label>
+              <label style="font-size:11px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" data-dow="4" checked>Thu</label>
+              <label style="font-size:11px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" data-dow="5" checked>Fri</label>
+              <label style="font-size:11px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" data-dow="6">Sat</label>
+              <label style="font-size:11px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" data-dow="0">Sun</label>
+            </div>
+          </div>
+        </div>
+        <div class="field"><label>Color</label><div class="swatches" id="sw-add"></div></div>
+        <button class="btn btn-dark btn-full" onclick="addEvent()">Add event</button>
+
+        <div class="plabel" style="margin-top:18px">All events</div>
+        <div id="ev-list"></div>
+      </div>
+
+      <!-- Team -->
+      <div class="panel hidden" id="p-team">
+        <div class="plabel">Add member</div>
+        <div class="field"><label>Name</label><input type="text" id="i-memname" placeholder="Name" onkeydown="if(event.key==='Enter')addMember()"></div>
+        <button class="btn btn-dark btn-full" onclick="addMember()">Add member</button>
+        <div class="plabel" style="margin-top:18px">Team</div>
+        <div id="mem-list"></div>
+      </div>
+
+      <!-- Place -->
+      <div class="panel hidden" id="p-place">
+        <div style="font-size:11px;color:#aaa;margin-bottom:10px;line-height:1.5">Select an event below, then click a column on the grid to assign it.</div>
+        <div id="place-list"></div>
+      </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid-area" id="grid-area">
+      <div id="grid-inner">
+        <div class="empty"><div class="empty-icon">📅</div>Set your dates in Setup to begin</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit event modal -->
+<div class="overlay off" id="ov-edit">
+  <div class="modal">
+    <h3>Edit event</h3>
+    <div class="field"><label>Name</label><input type="text" id="e-name"></div>
+    <div class="row2">
+      <div class="field"><label>Start</label><input type="time" id="e-start"></div>
+      <div class="field"><label>End</label><input type="time" id="e-end"></div>
+    </div>
+    <div class="field"><label>Location</label><input type="text" id="e-loc"></div>
+    <div class="field"><label>Note</label><textarea id="e-note"></textarea></div>
+    <div class="field">
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:#111">
+        <input type="checkbox" id="e-recur"> Recurring
+      </label>
+    </div>
+    <div id="e-dow-wrap" style="display:none">
+      <div class="field"><label>Expected on</label>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:3px" id="e-dow-boxes">
+          <label style="font-size:11px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" data-dow="1">Mon</label>
+          <label style="font-size:11px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" data-dow="2">Tue</label>
+          <label style="font-size:11px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" data-dow="3">Wed</label>
+          <label style="font-size:11px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" data-dow="4">Thu</label>
+          <label style="font-size:11px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" data-dow="5">Fri</label>
+          <label style="font-size:11px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" data-dow="6">Sat</label>
+          <label style="font-size:11px;display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" data-dow="0">Sun</label>
+        </div>
+      </div>
+    </div>
+    <div class="field"><label>Color</label><div class="swatches" id="sw-edit"></div></div>
+    <div class="modal-foot">
+      <button class="btn btn-del btn-xs" onclick="deleteEvent()" style="margin-right:auto">Delete</button>
+      <button class="btn btn-xs" onclick="closeEdit()">Cancel</button>
+      <button class="btn btn-dark btn-xs" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Remove assignment modal -->
+<div class="overlay off" id="ov-rm">
+  <div class="modal">
+    <h3>Remove assignment?</h3>
+    <p style="font-size:12px;color:#666" id="rm-desc"></p>
+    <div class="modal-foot">
+      <button class="btn btn-xs" onclick="closeRm()">Cancel</button>
+      <button class="btn btn-del btn-xs" onclick="confirmRm()">Remove</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+let G = {
+  startDate: '', endDate: '',
+  days: [],       // {date,label,short,dow}
+  curDay: 0,
+  events: [],     // {id,name,color,start,end,location,note,recurring,recurDows:[]}
+  members: [],    // {id,name}
+  assigns: {}     // {dayIdx:[{memberId,eventId,start,end}]}
+};
+
+const COLORS = ['#4361EE','#2A9D8F','#E76F51','#8338EC','#0EA5E9','#F59E0B','#EC4899','#64748B','#16A34A','#DC2626'];
+let addColor = COLORS[0];
+let editColor = COLORS[0];
+let selEvId = null;
+let editingId = null;
+let rmPending = null;
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+(function(){
+  // Build color swatches
+  buildSwatches('sw-add', () => addColor, c => { addColor = c; buildSwatches('sw-add', () => addColor, arguments.callee); });
+  buildSwatches('sw-edit', () => editColor, c => { editColor = c; buildSwatches('sw-edit', () => editColor, arguments.callee); });
+
+  document.getElementById('i-evrecur').addEventListener('change', e => {
+    document.getElementById('dow-wrap').style.display = e.target.checked ? 'block' : 'none';
+    document.getElementById('oneday-wrap').style.display = e.target.checked ? 'none' : 'block';
+  });
+  document.getElementById('e-recur').addEventListener('change', e => {
+    document.getElementById('e-dow-wrap').style.display = e.target.checked ? 'block' : 'none';
+  });
+
+  try {
+    const s = localStorage.getItem('oweek3');
+    if (s) {
+      G = JSON.parse(s);
+      if (G.startDate) document.getElementById('i-start').value = G.startDate;
+      if (G.endDate) document.getElementById('i-end').value = G.endDate;
+    }
+  } catch(e) {}
+
+  renderAll();
+})();
+
+function save() { try { localStorage.setItem('oweek3', JSON.stringify(G)); } catch(e){} }
+
+function renderAll() {
+  populateDayDropdown();
+  renderDayTabs();
+  renderEvList();
+  renderPlaceList();
+  renderMemList();
+  renderGrid();
+  updateCoverage();
+  document.getElementById('week-label').textContent =
+    G.days.length ? G.days[0].short + ' – ' + G.days[G.days.length-1].short : '';
+  document.getElementById('day-label').textContent =
+    G.days[G.curDay] ? G.days[G.curDay].label : '';
+}
+
+// ─── Left panel tabs ──────────────────────────────────────────────────────────
+function lswitch(name) {
+  ['setup','events','team','place'].forEach(n => {
+    document.getElementById('p-'+n).classList.toggle('hidden', n !== name);
+  });
+  document.querySelectorAll('.lnav').forEach((el,i) => {
+    el.classList.toggle('active', ['setup','events','team','place'][i] === name);
+  });
+}
+
+// ─── Color swatches ───────────────────────────────────────────────────────────
+function buildSwatches(containerId, getCol, onPick) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  COLORS.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'swatch' + (c === getCol() ? ' on' : '');
+    d.style.background = c;
+    d.onclick = () => { onPick(c); buildSwatches(containerId, getCol, onPick); };
+    wrap.appendChild(d);
+  });
+}
+
+function refreshAddSwatches() {
+  buildSwatches('sw-add', () => addColor, c => { addColor = c; refreshAddSwatches(); });
+}
+function refreshEditSwatches() {
+  buildSwatches('sw-edit', () => editColor, c => { editColor = c; refreshEditSwatches(); });
+}
+
+// ─── Dates ────────────────────────────────────────────────────────────────────
+function onDates() {
+  const s = document.getElementById('i-start').value;
+  const e = document.getElementById('i-end').value;
+  if (!s || !e) return;
+  G.startDate = s; G.endDate = e; G.days = []; G.curDay = 0;
+  const DN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let cur = new Date(s + 'T12:00:00');
+  const end = new Date(e + 'T12:00:00');
+  while (cur <= end) {
+    G.days.push({
+      date: cur.toISOString().slice(0,10),
+      label: DN[cur.getDay()] + ' ' + MN[cur.getMonth()] + ' ' + cur.getDate(),
+      short: DN[cur.getDay()] + ' ' + cur.getDate(),
+      dow: cur.getDay()
+    });
+    cur.setDate(cur.getDate()+1);
+  }
+  save(); renderAll();
+}
+
+// ─── Day tabs ─────────────────────────────────────────────────────────────────
+function populateDayDropdown() {
+  const sel = document.getElementById('i-evday');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— select a day —</option>';
+  G.days.forEach((d,i) => {
+    const opt = document.createElement('option');
+    opt.value = i; opt.textContent = d.label;
+    if (String(i) === String(cur)) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function renderDayTabs() {
+  const wrap = document.getElementById('day-tabs');
+  wrap.innerHTML = '';
+  G.days.forEach((d,i) => {
+    const b = document.createElement('div');
+    b.className = 'day-tab' + (i === G.curDay ? ' active' : '') + (dayHasGap(i) ? ' gap' : '');
+    b.textContent = d.short;
+    b.onclick = () => { G.curDay = i; save(); renderAll(); };
+    wrap.appendChild(b);
+  });
+}
+
+function dayHasGap(di) {
+  if (!G.days[di]) return false;
+  const dow = G.days[di].dow;
+  return G.events.some(ev => {
+    if (!ev.recurring || !ev.recurDows.includes(dow)) return false;
+    return !(G.assigns[di]||[]).some(a => a.eventId === ev.id);
+  });
+}
+
+// ─── Events ───────────────────────────────────────────────────────────────────
+function getDows(boxesId) {
+  const res = [];
+  document.querySelectorAll('#'+boxesId+' input[type=checkbox]').forEach(cb => {
+    if (cb.checked) res.push(parseInt(cb.dataset.dow));
+  });
+  return res;
+}
+
+function addEvent() {
+  const name = document.getElementById('i-evname').value.trim();
+  if (!name) return;
+  const start = document.getElementById('i-evstart').value;
+  const end = document.getElementById('i-evend').value;
+  if (!start || !end || start >= end) { alert('Please enter a valid start and end time.'); return; }
+  const recurring = document.getElementById('i-evrecur').checked;
+  const evDayIdx = !recurring ? document.getElementById('i-evday').value : '';
+  if (!recurring && evDayIdx === '' && G.days.length) { alert('Please select which day this event is on.'); return; }
+  G.events.push({
+    id: Date.now().toString(),
+    name, color: addColor, start, end,
+    location: document.getElementById('i-evloc').value.trim(),
+    note: document.getElementById('i-evnote').value.trim(),
+    recurring,
+    recurDows: recurring ? getDows('dow-boxes') : [],
+    dayIdx: recurring ? null : (evDayIdx !== '' ? parseInt(evDayIdx) : null)
+  });
+  // Clear form
+  document.getElementById('i-evname').value = '';
+  document.getElementById('i-evstart').value = '09:00';
+  document.getElementById('i-evend').value = '10:00';
+  document.getElementById('i-evloc').value = '';
+  document.getElementById('i-evnote').value = '';
+  document.getElementById('i-evrecur').checked = false;
+  document.getElementById('dow-wrap').style.display = 'none';
+  document.getElementById('oneday-wrap').style.display = 'block';
+  document.getElementById('i-evday').value = '';
+  save(); renderAll();
+}
+
+function renderEvList() {
+  const wrap = document.getElementById('ev-list');
+  wrap.innerHTML = '';
+  if (!G.events.length) {
+    wrap.innerHTML = '<div style="font-size:11px;color:#ccc;padding:8px 0">No events yet</div>';
+    return;
+  }
+  G.events.forEach(ev => {
+    const row = document.createElement('div');
+    row.className = 'ev-row' + (ev.id === selEvId ? ' sel' : '');
+
+    // Build status tags
+    let statusHtml = '';
+    if (ev.recurring && G.days.length) {
+      G.days.forEach((d,di) => {
+        if (!ev.recurDows.includes(d.dow)) return;
+        const placed = (G.assigns[di]||[]).some(a => a.eventId === ev.id);
+        statusHtml += `<span class="estag ${placed?'ok':'no'}">${d.short}</span>`;
+      });
+    } else {
+      const count = Object.values(G.assigns).reduce((n,arr) => n + arr.filter(a=>a.eventId===ev.id).length, 0);
+      statusHtml = count
+        ? `<span class="estag ok">Placed ${count}×</span>`
+        : `<span class="estag no">Not placed</span>`;
+    }
+
+    row.innerHTML = `
+      <div class="ev-dot" style="background:${ev.color}"></div>
+      <div class="ev-body">
+        <div class="ev-name">${ev.name}</div>
+        <div class="ev-meta">${ftm(ev.start)}–${ftm(ev.end)}${ev.location?' · '+ev.location:''}</div>
+        <div class="ev-status">${statusHtml}</div>
+      </div>
+      <span class="ev-edit" onclick="event.stopPropagation();openEdit('${ev.id}')">Edit</span>`;
+    row.onclick = () => pickEvent(ev.id);
+    wrap.appendChild(row);
+  });
+}
+
+function pickEvent(id) {
+  selEvId = selEvId === id ? null : id;
+  const ev = G.events.find(e=>e.id===id);
+  const hint = document.getElementById('hint-bar');
+  if (selEvId && ev) {
+    hint.textContent = `Placing: ${ev.name} (${ftm(ev.start)}–${ftm(ev.end)}) — click a person's column on the grid`;
+    hint.classList.add('show');
+    lswitch('place');
+  } else {
+    hint.classList.remove('show');
+  }
+  renderEvList();
+  renderPlaceList();
+}
+
+// ─── Place list ───────────────────────────────────────────────────────────────
+function renderPlaceList() {
+  const wrap = document.getElementById('place-list');
+  wrap.innerHTML = '';
+  if (!G.events.length) {
+    wrap.innerHTML = '<div style="font-size:11px;color:#ccc">Add events first</div>';
+    return;
+  }
+  G.events.forEach(ev => {
+    // For non-recurring events, only show on their assigned day
+    if (!ev.recurring && ev.dayIdx !== null && ev.dayIdx !== G.curDay) return;
+    const row = document.createElement('div');
+    row.className = 'ev-row' + (ev.id === selEvId ? ' sel' : '');
+    row.innerHTML = `
+      <div class="ev-dot" style="background:${ev.color}"></div>
+      <div class="ev-body">
+        <div class="ev-name">${ev.name}</div>
+        <div class="ev-meta">${ftm(ev.start)}–${ftm(ev.end)}</div>
+      </div>`;
+    row.onclick = () => pickEvent(ev.id);
+    wrap.appendChild(row);
+  });
+}
+
+// ─── Edit event ───────────────────────────────────────────────────────────────
+function openEdit(id) {
+  editingId = id;
+  const ev = G.events.find(e=>e.id===id);
+  if (!ev) return;
+  document.getElementById('e-name').value = ev.name;
+  document.getElementById('e-start').value = ev.start;
+  document.getElementById('e-end').value = ev.end;
+  document.getElementById('e-loc').value = ev.location||'';
+  document.getElementById('e-note').value = ev.note||'';
+  document.getElementById('e-recur').checked = ev.recurring;
+  document.getElementById('e-dow-wrap').style.display = ev.recurring ? 'block' : 'none';
+  document.querySelectorAll('#e-dow-boxes input[type=checkbox]').forEach(cb => {
+    cb.checked = ev.recurDows.includes(parseInt(cb.dataset.dow));
+  });
+  editColor = ev.color;
+  refreshEditSwatches();
+  document.getElementById('ov-edit').classList.remove('off');
+}
+
+function closeEdit() { document.getElementById('ov-edit').classList.add('off'); editingId = null; }
+
+function saveEdit() {
+  const ev = G.events.find(e=>e.id===editingId);
+  if (!ev) return;
+  const name = document.getElementById('e-name').value.trim();
+  if (!name) return;
+  const start = document.getElementById('e-start').value;
+  const end = document.getElementById('e-end').value;
+  if (!start||!end||start>=end) { alert('Invalid time range.'); return; }
+  ev.name=name; ev.start=start; ev.end=end;
+  ev.location=document.getElementById('e-loc').value.trim();
+  ev.note=document.getElementById('e-note').value.trim();
+  ev.color=editColor;
+  ev.recurring=document.getElementById('e-recur').checked;
+  ev.recurDows=ev.recurring?getDows('e-dow-boxes'):[];
+  closeEdit(); save(); renderAll();
+}
+
+function deleteEvent() {
+  if (!editingId) return;
+  G.events = G.events.filter(e=>e.id!==editingId);
+  Object.keys(G.assigns).forEach(di=>{
+    G.assigns[di]=G.assigns[di].filter(a=>a.eventId!==editingId);
+  });
+  if (selEvId===editingId) { selEvId=null; document.getElementById('hint-bar').classList.remove('show'); }
+  closeEdit(); save(); renderAll();
+}
+
+// ─── Team ─────────────────────────────────────────────────────────────────────
+function addMember() {
+  const name = document.getElementById('i-memname').value.trim();
+  if (!name) return;
+  G.members.push({id:Date.now().toString(), name});
+  document.getElementById('i-memname').value = '';
+  save(); renderAll();
+}
+
+function deleteMember(id) {
+  G.members = G.members.filter(m=>m.id!==id);
+  Object.keys(G.assigns).forEach(di=>{
+    G.assigns[di]=(G.assigns[di]||[]).filter(a=>a.memberId!==id);
+  });
+  save(); renderAll();
+}
+
+function renderMemList() {
+  const wrap = document.getElementById('mem-list');
+  wrap.innerHTML = '';
+  if (!G.members.length) {
+    wrap.innerHTML = '<div style="font-size:11px;color:#ccc;padding:8px 0">No members yet</div>';
+    return;
+  }
+  G.members.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'mem-row';
+    const ini = m.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    row.innerHTML = `<div class="mem-av">${ini}</div><div class="mem-name">${m.name}</div>
+      <button class="btn btn-del btn-xs" onclick="deleteMember('${m.id}')">✕</button>`;
+    wrap.appendChild(row);
+  });
+}
+
+// ─── Grid ─────────────────────────────────────────────────────────────────────
+function renderGrid() {
+  const inner = document.getElementById('grid-inner');
+  if (!G.days.length) {
+    inner.innerHTML = '<div class="empty"><div class="empty-icon">📅</div>Set your dates in Setup to begin</div>';
+    return;
+  }
+  if (!G.members.length) {
+    inner.innerHTML = '<div class="empty"><div class="empty-icon">👥</div>Add team members in Team</div>';
+    return;
+  }
+
+  const di = G.curDay;
+  const assigns = G.assigns[di] || [];
+
+  // Time range — scan all assignments for this day, default 8am–6pm
+  let minH = 8, maxH = 18;
+  assigns.forEach(a => {
+    const sh = parseInt(a.start);
+    const eh = parseInt(a.end) + (parseInt(a.end.split(':')[1]) > 0 ? 1 : 0);
+    if (sh < minH) minH = sh;
+    if (eh > maxH) maxH = eh;
+  });
+  // Also account for selected event
+  if (selEvId) {
+    const ev = G.events.find(e=>e.id===selEvId);
+    if (ev) {
+      const sh = parseInt(ev.start);
+      const eh = parseInt(ev.end) + (parseInt(ev.end.split(':')[1]) > 0 ? 1 : 0);
+      if (sh < minH) minH = sh;
+      if (eh > maxH) maxH = eh;
+    }
+  }
+
+  // Build half-hour slots
+  const slots = [];
+  for (let h = minH; h <= maxH; h++) {
+    slots.push({h, m:0, isHour:true});
+    if (h < maxH) slots.push({h, m:30, isHour:false});
+  }
+
+  function toSlotIdx(t) {
+    const [h,m] = t.split(':').map(Number);
+    return (h - minH) * 2 + (m >= 30 ? 1 : 0);
+  }
+
+  const ROW = 26;
+
+  // Track first instance per member+event combo (for label suppression on repeats)
+  const seen = {};
+
+  let html = `<table class="sched"><thead><tr><th></th>`;
+  G.members.forEach(m => { html += `<th>${m.name}</th>`; });
+  html += `</tr></thead><tbody>`;
+
+  slots.forEach((slot, si) => {
+    const lbl = slot.m === 0 ? ftm(pad(slot.h)+':00') : ':30';
+    html += `<tr class="${slot.isHour?'hr':''}"><td>${lbl}</td>`;
+    G.members.forEach(m => {
+      const canClick = !!selEvId;
+      html += `<td ${canClick?`class="clickable" onclick="placeEvent('${m.id}',${si})"`:''}style="height:${ROW}px">`;
+      // Render blocks starting at this slot
+      assigns.filter(a=>a.memberId===m.id).forEach((a, ai) => {
+        if (toSlotIdx(a.start) !== si) return;
+        const ev = G.events.find(e=>e.id===a.eventId);
+        if (!ev) return;
+        const span = Math.max(1, toSlotIdx(a.end) - toSlotIdx(a.start));
+        const bh = span * ROW - 2;
+        const key = m.id + '-' + ev.id;
+        const isFirst = !seen[key];
+        if (isFirst) seen[key] = true;
+        const globalIdx = (G.assigns[di]||[]).indexOf(a);
+        const locText = isFirst ? (ev.location||'') : '';
+        html += `<div class="blk${isFirst?'':' repeat'}" style="background:${ev.color};top:1px;height:${bh}px"
+          onclick="event.stopPropagation();openRm(${di},${globalIdx})">
+          ${isFirst ? ev.name : `<span style="opacity:0.75;font-size:9px">${ev.name}</span>`}
+          ${locText ? `<span class="bloc-loc">${locText}</span>` : ''}
+        </div>`;
+      });
+      html += `</td>`;
+    });
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>`;
+  inner.innerHTML = html;
+}
+
+function placeEvent(memberId, slotIdx) {
+  if (!selEvId) return;
+  const ev = G.events.find(e=>e.id===selEvId);
+  if (!ev) return;
+  const di = G.curDay;
+  if (!G.assigns[di]) G.assigns[di] = [];
+  // Always use event's defined times
+  G.assigns[di].push({memberId, eventId: selEvId, start: ev.start, end: ev.end});
+  save(); renderAll();
+}
+
+// ─── Remove assignment ────────────────────────────────────────────────────────
+function openRm(di, idx) {
+  rmPending = {di, idx};
+  const a = (G.assigns[di]||[])[idx];
+  const ev = a ? G.events.find(e=>e.id===a.eventId) : null;
+  const m = a ? G.members.find(m=>m.id===a.memberId) : null;
+  document.getElementById('rm-desc').textContent =
+    ev && m ? `${ev.name} assigned to ${m.name} at ${ftm(a.start)}–${ftm(a.end)}` : '';
+  document.getElementById('ov-rm').classList.remove('off');
+}
+function closeRm() { document.getElementById('ov-rm').classList.add('off'); rmPending = null; }
+function confirmRm() {
+  if (!rmPending) return;
+  (G.assigns[rmPending.di]||[]).splice(rmPending.idx, 1);
+  closeRm(); save(); renderAll();
+}
+
+// ─── Coverage bar ─────────────────────────────────────────────────────────────
+function updateCoverage() {
+  let ok=0, no=0, part=0;
+  G.events.forEach(ev => {
+    if (ev.recurring) {
+      const relevant = G.days.map((d,di) => ev.recurDows.includes(d.dow) ? di : null).filter(x=>x!==null);
+      if (!relevant.length) return;
+      const placed = relevant.filter(di => (G.assigns[di]||[]).some(a=>a.eventId===ev.id));
+      if (placed.length === relevant.length) ok++;
+      else if (placed.length === 0) no++;
+      else part++;
+    } else {
+      const placed = Object.values(G.assigns).some(arr=>arr.some(a=>a.eventId===ev.id));
+      placed ? ok++ : no++;
+    }
+  });
+  document.getElementById('cv-ok').textContent = ok + ' fully covered';
+  document.getElementById('cv-no').textContent = no + ' not placed';
+  document.getElementById('cv-part').textContent = part + ' partial';
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function ftm(t) {
+  if (!t) return '';
+  let [h,m] = t.split(':').map(Number);
+  const ap = h >= 12 ? 'pm' : 'am';
+  if (h > 12) h -= 12;
+  if (h === 0) h = 12;
+  return h + ':' + String(m).padStart(2,'0') + ap;
+}
+function pad(n) { return String(n).padStart(2,'0'); }
+
+
+// ─── Export ───────────────────────────────────────────────────────────────────
+function exportSchedule() {
+  if (!G.days.length || !G.members.length) {
+    alert('Add dates and team members before exporting.');
+    return;
+  }
+
+  // Build grid HTML for each day
+  function buildDayGrid(di) {
+    const assigns = G.assigns[di] || [];
+    let minH = 8, maxH = 18;
+    assigns.forEach(a => {
+      const sh = parseInt(a.start);
+      const eh = parseInt(a.end) + (parseInt(a.end.split(':')[1]) > 0 ? 1 : 0);
+      if (sh < minH) minH = sh;
+      if (eh > maxH) maxH = eh;
+    });
+    const slots = [];
+    for (let h = minH; h <= maxH; h++) {
+      slots.push({h, m:0, isHour:true});
+      if (h < maxH) slots.push({h, m:30, isHour:false});
+    }
+    function toSlotIdx(t) {
+      const [h,m] = t.split(':').map(Number);
+      return (h - minH) * 2 + (m >= 30 ? 1 : 0);
+    }
+    const ROW = 28;
+    const seen = {};
+    let html = '<table class="sched"><thead><tr><th></th>';
+    G.members.forEach(m => { html += `<th>${m.name}</th>`; });
+    html += '</tr></thead><tbody>';
+    slots.forEach((slot, si) => {
+      const lbl = slot.m === 0 ? ftm(pad(slot.h)+':00') : ':30';
+      html += `<tr class="${slot.isHour?'hr':''}"><td>${lbl}</td>`;
+      G.members.forEach(m => {
+        html += `<td style="height:${ROW}px">`;
+        assigns.filter(a=>a.memberId===m.id).forEach(a => {
+          if (toSlotIdx(a.start) !== si) return;
+          const ev = G.events.find(e=>e.id===a.eventId);
+          if (!ev) return;
+          const span = Math.max(1, toSlotIdx(a.end) - toSlotIdx(a.start));
+          const bh = span * ROW - 2;
+          const key = m.id + '-' + ev.id;
+          const isFirst = !seen[key];
+          if (isFirst) seen[key] = true;
+          const locText = isFirst ? (ev.location||'') : '';
+          html += `<div class="blk${isFirst?'':' repeat'}" style="background:${ev.color};top:1px;height:${bh}px">
+            ${isFirst ? ev.name : `<span style="opacity:0.75;font-size:9px">${ev.name}</span>`}
+            ${locText ? `<span class="bloc-loc">${locText}</span>` : ''}
+          </div>`;
+        });
+        html += '</td>';
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+  }
+
+  // Build tab buttons
+  const tabBtns = G.days.map((d,i) =>
+    `<div class="day-tab" id="tab-${i}" onclick="showDay(${i})">${d.short}</div>`
+  ).join('');
+
+  // Build day panels
+  const dayPanels = G.days.map((d,i) =>
+    `<div class="day-panel" id="day-${i}" style="display:${i===0?'block':'none'}">${buildDayGrid(i)}</div>`
+  ).join('');
+
+  const weekLabel = G.days[0].short + ' – ' + G.days[G.days.length-1].short;
+
+  const exportHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OWeek Schedule</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'DM Sans',sans-serif;font-size:13px;color:#111;background:#fff}
+.topbar{display:flex;align-items:center;gap:10px;height:44px;background:#111;color:#fff;padding:0 16px;position:sticky;top:0;z-index:20}
+.topbar h1{font-size:13px;font-weight:600}
+.topbar .wk{font-size:11px;color:#777;margin-left:6px}
+.day-tabs{display:flex;gap:1px;margin-left:auto}
+.day-tab{padding:4px 11px;font-size:11px;font-weight:500;cursor:pointer;color:#888;border-radius:3px}
+.day-tab:hover{color:#fff;background:#333}
+.day-tab.active{color:#111;background:#fff}
+.grid-area{padding:0;overflow-x:auto}
+table.sched{border-collapse:collapse;width:100%}
+table.sched th{position:sticky;top:44px;z-index:10;padding:9px 10px 8px;text-align:left;font-size:12px;font-weight:500;color:#111;background:#fafafa;border-bottom:2px solid #e4e4e4;border-right:1px solid #eee;white-space:nowrap;min-width:130px}
+table.sched th:first-child{width:56px;min-width:56px;font-size:10px;color:#bbb;font-weight:500;border-right:1.5px solid #e4e4e4}
+table.sched td{padding:0;height:28px;border-right:1px solid #f5f5f5;border-bottom:1px solid #f9f9f9;position:relative;vertical-align:top}
+table.sched tr.hr td{border-bottom:1px solid #ebebeb}
+table.sched td:first-child{padding:0 8px;font-size:10px;color:#ccc;font-weight:500;vertical-align:middle;white-space:nowrap;background:#fafafa;border-right:1.5px solid #e4e4e4}
+table.sched tr.hr td:first-child{color:#999;font-size:11px;font-weight:600}
+.blk{position:absolute;left:2px;right:2px;border-radius:2px;padding:2px 5px;color:#fff;font-size:10px;font-weight:500;overflow:hidden;z-index:2}
+.blk.repeat{opacity:0.65}
+.bloc-loc{display:block;font-size:9px;font-weight:400;opacity:0.8;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media print{.topbar{position:static}.day-tabs{display:none}.day-panel{display:block!important;page-break-after:always}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>OWeek Schedule</h1>
+  <span class="wk">${weekLabel}</span>
+  <div class="day-tabs">${tabBtns}</div>
+</div>
+<div class="grid-area">${dayPanels}</div>
+<scr' + 'ipt>
+function showDay(i) {
+  document.querySelectorAll('.day-panel').forEach((el,j) => el.style.display = j===i?'block':'none');
+  document.querySelectorAll('.day-tab').forEach((el,j) => el.classList.toggle('active', j===i));
+}
+document.querySelectorAll('.day-tab')[0].classList.add('active');
+<\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([exportHtml], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'oweek-schedule.html';
+  a.click();
+}
+
+// Init color swatches properly on load
+refreshAddSwatches();
+</script>
+</body>
+</html>
