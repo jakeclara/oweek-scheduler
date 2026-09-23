@@ -250,7 +250,7 @@ table.sched td.clickable:hover{background:#f0f7ff}
         <div class="lnav active" onclick="lswitch('setup')">Setup</div>
         <div class="lnav" onclick="lswitch('events')">Events</div>
         <div class="lnav" onclick="lswitch('team')">Team</div>
-        <div class="lnav" onclick="lswitch('place')">Place</div>
+        
       </div>
 
       <!-- Setup -->
@@ -312,11 +312,7 @@ table.sched td.clickable:hover{background:#f0f7ff}
         <div id="mem-list"></div>
       </div>
 
-      <!-- Place -->
-      <div class="panel hidden" id="p-place">
-        <div style="font-size:11px;color:#aaa;margin-bottom:10px;line-height:1.5">Select an event below, then click a column on the grid to assign it.</div>
-        <div id="place-list"></div>
-      </div>
+</div>
     </div>
 
     <!-- Grid -->
@@ -446,11 +442,11 @@ function renderAll() {
 
 // ─── Left panel tabs ──────────────────────────────────────────────────────────
 function lswitch(name) {
-  ['setup','events','team','place'].forEach(n => {
+  ['setup','events','team'].forEach(n => {
     document.getElementById('p-'+n).classList.toggle('hidden', n !== name);
   });
   document.querySelectorAll('.lnav').forEach((el,i) => {
-    el.classList.toggle('active', ['setup','events','team','place'][i] === name);
+    el.classList.toggle('active', ['setup','events','team'][i] === name);
   });
 }
 
@@ -654,9 +650,23 @@ function pickEvent(id) {
   const ev = G.events.find(e=>e.id===id);
   const hint = document.getElementById('hint-bar');
   if (selEvId && ev) {
-    hint.textContent = `Placing: ${ev.name} (${ftm(ev.start)}–${ftm(ev.end)}) — click a person's column on the grid`;
+    const curDay = G.days[G.curDay];
+    const canPlaceToday = ev.recurring
+      ? (curDay && ev.recurDows.includes(curDay.dow))
+      : ev.dayIdx === G.curDay;
+    if (canPlaceToday) {
+      hint.textContent = `Placing: ${ev.name} (${ftm(ev.start)}–${ftm(ev.end)}) — click a person's column on the grid`;
+      hint.style.background = '#eff6ff';
+      hint.style.color = '#1d4ed8';
+      hint.style.borderBottomColor = '#dbeafe';
+    } else {
+      const assignedDay = !ev.recurring && ev.dayIdx !== null && G.days[ev.dayIdx] ? G.days[ev.dayIdx].label : null;
+      hint.textContent = `${ev.name} is not scheduled for this day${assignedDay ? ' — switch to ' + assignedDay : ''}`;
+      hint.style.background = '#fef2f2';
+      hint.style.color = '#b91c1c';
+      hint.style.borderBottomColor = '#fecaca';
+    }
     hint.classList.add('show');
-    lswitch('place');
   } else {
     hint.classList.remove('show');
   }
@@ -848,7 +858,15 @@ function renderGrid() {
     const lbl = slot.m === 0 ? ftm(pad(slot.h)+':00') : ':30';
     html += `<tr class="${slot.isHour?'hr':''}"><td>${lbl}</td>`;
     G.members.forEach(m => {
-      const canClick = !!selEvId;
+      const canClick = selEvId && (() => {
+        const ev = G.events.find(e=>e.id===selEvId);
+        if (!ev) return false;
+        if (ev.recurring) {
+          return ev.recurDows.includes(G.days[G.curDay] ? G.days[G.curDay].dow : -1);
+        } else {
+          return ev.dayIdx === G.curDay;
+        }
+      })();
       html += `<td ${canClick?`class="clickable" onclick="placeEvent('${m.id}',${si})"`:''}style="height:${ROW}px">`;
       // Render blocks starting at this slot
       assigns.filter(a=>a.memberId===m.id).forEach((a, ai) => {
