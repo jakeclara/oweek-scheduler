@@ -971,13 +971,7 @@ function exportSchedule() {
 
   const weekLabel = G.days[0].short + ' - ' + G.days[G.days.length-1].short;
 
-  const showDayFn = [
-    'function showDay(i){',
-    '  document.querySelectorAll(".day-panel").forEach(function(el,j){el.style.display=j===i?"block":"none";});',
-    '  document.querySelectorAll(".day-tab").forEach(function(el,j){el.classList.toggle("active",j===i);});',
-    '}',
-    'document.querySelectorAll(".day-tab")[0].classList.add("active");'
-  ].join('\n');
+  const showDayFn = 'function showDay(i){document.querySelectorAll(".day-panel").forEach(function(el,j){el.style.display=j===i?"block":"none";});document.querySelectorAll(".day-tab").forEach(function(el,j){el.classList.toggle("active",j===i);});}document.querySelectorAll(".day-tab")[0].classList.add("active");';
 
   const parts = [
     '<!DOCTYPE html>',
