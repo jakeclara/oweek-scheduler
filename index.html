@@ -208,6 +208,11 @@ table.sched td.clickable:hover{background:#f0f7ff}
   .body{display:block}
   .grid-area{overflow:visible}
   body,html{height:auto}
+  .blk{
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+    color-adjust:exact!important;
+  }
 }
 </style>
 </head>
@@ -339,6 +344,11 @@ table.sched td.clickable:hover{background:#f0f7ff}
         <input type="checkbox" id="e-recur"> Recurring
       </label>
     </div>
+    <div id="e-oneday-wrap" style="display:none">
+      <div class="field"><label>Which day</label>
+        <select id="e-evday"><option value="">— select a day —</option></select>
+      </div>
+    </div>
     <div id="e-dow-wrap" style="display:none">
       <div class="field"><label>Expected on</label>
         <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:3px" id="e-dow-boxes">
@@ -403,6 +413,7 @@ let rmPending = null;
   });
   document.getElementById('e-recur').addEventListener('change', e => {
     document.getElementById('e-dow-wrap').style.display = e.target.checked ? 'block' : 'none';
+    document.getElementById('e-oneday-wrap').style.display = e.target.checked ? 'none' : 'block';
   });
 
   try {
@@ -650,6 +661,16 @@ function openEdit(id) {
   document.getElementById('e-note').value = ev.note||'';
   document.getElementById('e-recur').checked = ev.recurring;
   document.getElementById('e-dow-wrap').style.display = ev.recurring ? 'block' : 'none';
+  document.getElementById('e-oneday-wrap').style.display = ev.recurring ? 'none' : 'block';
+  // Populate day dropdown for edit modal
+  const esel = document.getElementById('e-evday');
+  esel.innerHTML = '<option value="">— select a day —</option>';
+  G.days.forEach((d,i) => {
+    const opt = document.createElement('option');
+    opt.value = i; opt.textContent = d.label;
+    if (ev.dayIdx === i) opt.selected = true;
+    esel.appendChild(opt);
+  });
   document.querySelectorAll('#e-dow-boxes input[type=checkbox]').forEach(cb => {
     cb.checked = ev.recurDows.includes(parseInt(cb.dataset.dow));
   });
@@ -674,6 +695,13 @@ function saveEdit() {
   ev.color=editColor;
   ev.recurring=document.getElementById('e-recur').checked;
   ev.recurDows=ev.recurring?getDows('e-dow-boxes'):[];
+  if (!ev.recurring) {
+    const di = document.getElementById('e-evday').value;
+    if (di === '' && G.days.length) { alert('Please select which day this event is on.'); return; }
+    ev.dayIdx = di !== '' ? parseInt(di) : null;
+  } else {
+    ev.dayIdx = null;
+  }
   closeEdit(); save(); renderAll();
 }
 
@@ -794,10 +822,12 @@ function renderGrid() {
         if (isFirst) seen[key] = true;
         const globalIdx = (G.assigns[di]||[]).indexOf(a);
         const locText = isFirst ? (ev.location||'') : '';
+        const noteText = isFirst ? (ev.note||'') : '';
         html += `<div class="blk${isFirst?'':' repeat'}" style="background:${ev.color};top:1px;height:${bh}px"
           onclick="event.stopPropagation();openRm(${di},${globalIdx})">
           ${isFirst ? ev.name : `<span style="opacity:0.75;font-size:9px">${ev.name}</span>`}
           ${locText ? `<span class="bloc-loc">${locText}</span>` : ''}
+          ${noteText ? `<span class="bloc-loc">${noteText}</span>` : ''}
         </div>`;
       });
       html += `</td>`;
@@ -969,7 +999,7 @@ table.sched tr.hr td:first-child{color:#999;font-size:11px;font-weight:600}
 .blk{position:absolute;left:2px;right:2px;border-radius:2px;padding:2px 5px;color:#fff;font-size:10px;font-weight:500;overflow:hidden;z-index:2}
 .blk.repeat{opacity:0.65}
 .bloc-loc{display:block;font-size:9px;font-weight:400;opacity:0.8;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media print{.topbar{position:static}.day-tabs{display:none}.day-panel{display:block!important;page-break-after:always}}
+@media print{.topbar{position:static}.day-tabs{display:none}.day-panel{display:block!important;page-break-after:always}.blk{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}}
 </style>
 </head>
 <body>
