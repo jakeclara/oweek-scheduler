@@ -601,7 +601,7 @@ function renderEvList() {
       <div class="ev-dot" style="background:${ev.color}"></div>
       <div class="ev-body">
         <div class="ev-name">${ev.name}</div>
-        <div class="ev-meta">${ftm(ev.start)}–${ftm(ev.end)}${ev.location?' · '+ev.location:''}</div>
+        <div class="ev-meta">${ftm(ev.start)}–${ftm(ev.end)}${ev.location?' · '+ev.location:''}${ev.recurring?' · '+G.days.filter(d=>ev.recurDows.includes(d.dow)).map(d=>d.short).join(', '):ev.dayIdx!==null&&G.days[ev.dayIdx]?' · '+G.days[ev.dayIdx].label:''}</div>
         <div class="ev-status">${statusHtml}</div>
       </div>
       <span class="ev-edit" onclick="event.stopPropagation();openEdit('${ev.id}')">Edit</span>`;
@@ -643,7 +643,7 @@ function renderPlaceList() {
       <div class="ev-dot" style="background:${ev.color}"></div>
       <div class="ev-body">
         <div class="ev-name">${ev.name}</div>
-        <div class="ev-meta">${ftm(ev.start)}–${ftm(ev.end)}</div>
+        <div class="ev-meta">${ftm(ev.start)}–${ftm(ev.end)}${ev.recurring?' · '+G.days.filter(d=>ev.recurDows.includes(d.dow)).map(d=>d.short).join(', '):ev.dayIdx!==null&&G.days[ev.dayIdx]?' · '+G.days[ev.dayIdx].label:''}</div>
       </div>`;
     row.onclick = () => pickEvent(ev.id);
     wrap.appendChild(row);
