@@ -571,6 +571,40 @@ function addEvent() {
   save(); renderAll();
 }
 
+function makeEvRow(ev) {
+  const row = document.createElement('div');
+  row.className = 'ev-row' + (ev.id === selEvId ? ' sel' : '');
+  let statusHtml = '';
+  if (ev.recurring && G.days.length) {
+    G.days.forEach((d,di) => {
+      if (!ev.recurDows.includes(d.dow)) return;
+      const placed = (G.assigns[di]||[]).some(a => a.eventId === ev.id);
+      statusHtml += `<span class="estag ${placed?'ok':'no'}">${d.short}</span>`;
+    });
+  } else {
+    const placed = Object.values(G.assigns).some(arr=>arr.some(a=>a.eventId===ev.id));
+    statusHtml = placed ? `<span class="estag ok">Placed</span>` : `<span class="estag no">Not placed</span>`;
+  }
+  row.innerHTML = `
+    <div class="ev-dot" style="background:${ev.color}"></div>
+    <div class="ev-body">
+      <div class="ev-name">${ev.name}</div>
+      <div class="ev-meta">${ftm(ev.start)}–${ftm(ev.end)}${ev.location?' · '+ev.location:''}</div>
+      <div class="ev-status">${statusHtml}</div>
+    </div>
+    <span class="ev-edit" onclick="event.stopPropagation();openEdit('${ev.id}')">Edit</span>`;
+  row.onclick = () => pickEvent(ev.id);
+  return row;
+}
+
+function makeSectionHeader(label) {
+  const h = document.createElement('div');
+  h.className = 'plabel';
+  h.style.cssText = 'margin-top:14px;margin-bottom:5px';
+  h.textContent = label;
+  return h;
+}
+
 function renderEvList() {
   const wrap = document.getElementById('ev-list');
   wrap.innerHTML = '';
@@ -578,36 +612,41 @@ function renderEvList() {
     wrap.innerHTML = '<div style="font-size:11px;color:#ccc;padding:8px 0">No events yet</div>';
     return;
   }
-  G.events.forEach(ev => {
-    const row = document.createElement('div');
-    row.className = 'ev-row' + (ev.id === selEvId ? ' sel' : '');
 
-    // Build status tags
-    let statusHtml = '';
-    if (ev.recurring && G.days.length) {
-      G.days.forEach((d,di) => {
-        if (!ev.recurDows.includes(d.dow)) return;
-        const placed = (G.assigns[di]||[]).some(a => a.eventId === ev.id);
-        statusHtml += `<span class="estag ${placed?'ok':'no'}">${d.short}</span>`;
-      });
-    } else {
-      const count = Object.values(G.assigns).reduce((n,arr) => n + arr.filter(a=>a.eventId===ev.id).length, 0);
-      statusHtml = count
-        ? `<span class="estag ok">Placed ${count}×</span>`
-        : `<span class="estag no">Not placed</span>`;
+  const recurring = G.events.filter(ev => ev.recurring);
+  const oneOff = G.events.filter(ev => !ev.recurring);
+
+  // ── Recurring section ──
+  if (recurring.length) {
+    wrap.appendChild(makeSectionHeader('Recurring'));
+    recurring
+      .sort((a,b) => a.start.localeCompare(b.start))
+      .forEach(ev => wrap.appendChild(makeEvRow(ev)));
+  }
+
+  // ── Per-day sections ──
+  if (G.days.length) {
+    G.days.forEach((d, di) => {
+      const dayEvs = oneOff
+        .filter(ev => ev.dayIdx === di)
+        .sort((a,b) => a.start.localeCompare(b.start));
+      if (!dayEvs.length) return;
+      wrap.appendChild(makeSectionHeader(d.label));
+      dayEvs.forEach(ev => wrap.appendChild(makeEvRow(ev)));
+    });
+    // Events with no day assigned yet
+    const unassigned = oneOff.filter(ev => ev.dayIdx === null || ev.dayIdx === undefined);
+    if (unassigned.length) {
+      wrap.appendChild(makeSectionHeader('No day set'));
+      unassigned.sort((a,b) => a.start.localeCompare(b.start)).forEach(ev => wrap.appendChild(makeEvRow(ev)));
     }
-
-    row.innerHTML = `
-      <div class="ev-dot" style="background:${ev.color}"></div>
-      <div class="ev-body">
-        <div class="ev-name">${ev.name}</div>
-        <div class="ev-meta">${ftm(ev.start)}–${ftm(ev.end)}${ev.location?' · '+ev.location:''}${ev.recurring?' · '+G.days.filter(d=>ev.recurDows.includes(d.dow)).map(d=>d.short).join(', '):ev.dayIdx!==null&&G.days[ev.dayIdx]?' · '+G.days[ev.dayIdx].label:''}</div>
-        <div class="ev-status">${statusHtml}</div>
-      </div>
-      <span class="ev-edit" onclick="event.stopPropagation();openEdit('${ev.id}')">Edit</span>`;
-    row.onclick = () => pickEvent(ev.id);
-    wrap.appendChild(row);
-  });
+  } else {
+    // No dates set yet — just list them all
+    if (oneOff.length) {
+      wrap.appendChild(makeSectionHeader('One-off events'));
+      oneOff.sort((a,b) => a.start.localeCompare(b.start)).forEach(ev => wrap.appendChild(makeEvRow(ev)));
+    }
+  }
 }
 
 function pickEvent(id) {
