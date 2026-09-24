@@ -311,8 +311,6 @@ table.sched td.clickable:hover{background:#f0f7ff}
         <div class="plabel" style="margin-top:18px">Team</div>
         <div id="mem-list"></div>
       </div>
-
-</div>
     </div>
 
     <!-- Grid -->
@@ -430,7 +428,6 @@ function renderAll() {
   populateDayDropdown();
   renderDayTabs();
   renderEvList();
-  renderPlaceList();
   renderMemList();
   renderGrid();
   updateCoverage();
@@ -671,33 +668,10 @@ function pickEvent(id) {
     hint.classList.remove('show');
   }
   renderEvList();
-  renderPlaceList();
   renderGrid();
 }
 
-// ─── Place list ───────────────────────────────────────────────────────────────
-function renderPlaceList() {
-  const wrap = document.getElementById('place-list');
-  wrap.innerHTML = '';
-  if (!G.events.length) {
-    wrap.innerHTML = '<div style="font-size:11px;color:#ccc">Add events first</div>';
-    return;
-  }
-  G.events.forEach(ev => {
-    // For non-recurring events, only show on their assigned day
-    if (!ev.recurring && ev.dayIdx !== null && ev.dayIdx !== G.curDay) return;
-    const row = document.createElement('div');
-    row.className = 'ev-row' + (ev.id === selEvId ? ' sel' : '');
-    row.innerHTML = `
-      <div class="ev-dot" style="background:${ev.color}"></div>
-      <div class="ev-body">
-        <div class="ev-name">${ev.name}</div>
-        <div class="ev-meta">${ftm(ev.start)}–${ftm(ev.end)}${ev.recurring?' · '+G.days.filter(d=>ev.recurDows.includes(d.dow)).map(d=>d.short).join(', '):ev.dayIdx!==null&&G.days[ev.dayIdx]?' · '+G.days[ev.dayIdx].label:''}</div>
-      </div>`;
-    row.onclick = () => pickEvent(ev.id);
-    wrap.appendChild(row);
-  });
-}
+
 
 // ─── Edit event ───────────────────────────────────────────────────────────────
 function openEdit(id) {
