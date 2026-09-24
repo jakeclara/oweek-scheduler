@@ -188,6 +188,14 @@ table.sched td.clickable:hover{background:#f0f7ff}
 .blk .bloc-loc{display:block;font-size:9px;font-weight:400;opacity:0.8;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .blk.repeat{opacity:0.65}
 
+/* ── Grid font sizes ── */
+.fs-sm .blk{font-size:10px}
+.fs-sm .blk .bloc-loc{font-size:9px}
+.fs-md .blk{font-size:12px}
+.fs-md .blk .bloc-loc{font-size:10px}
+.fs-lg .blk{font-size:14px}
+.fs-lg .blk .bloc-loc{font-size:11px}
+
 /* ── Empty states ── */
 .empty{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -225,6 +233,9 @@ table.sched td.clickable:hover{background:#f0f7ff}
     <span class="topbar-week" id="week-label"></span>
     <div class="day-tabs" id="day-tabs"></div>
     <div class="topbar-actions">
+      <button class="tbtn" id="fs-sm" onclick="setFs('sm')" style="opacity:1">S</button>
+      <button class="tbtn" id="fs-md" onclick="setFs('md')" style="opacity:0.4">M</button>
+      <button class="tbtn" id="fs-lg" onclick="setFs('lg')" style="opacity:0.4">L</button>
       <button class="tbtn" onclick="exportSchedule()">Export</button>
       <button class="tbtn" onclick="window.print()">Print</button>
     </div>
@@ -314,7 +325,7 @@ table.sched td.clickable:hover{background:#f0f7ff}
     </div>
 
     <!-- Grid -->
-    <div class="grid-area" id="grid-area">
+    <div class="grid-area fs-sm" id="grid-area">
       <div id="grid-inner">
         <div class="empty"><div class="empty-icon">📅</div>Set your dates in Setup to begin</div>
       </div>
@@ -936,6 +947,16 @@ function ftm(t) {
 }
 function pad(n) { return String(n).padStart(2,'0'); }
 
+
+// ─── Font size ───────────────────────────────────────────────────────────────────
+function setFs(size) {
+  const grid = document.getElementById('grid-area');
+  grid.classList.remove('fs-sm','fs-md','fs-lg');
+  grid.classList.add('fs-'+size);
+  ['sm','md','lg'].forEach(s => {
+    document.getElementById('fs-'+s).style.opacity = s === size ? '1' : '0.4';
+  });
+}
 
 // ─── Export ───────────────────────────────────────────────────────────────────
 function exportSchedule() {
